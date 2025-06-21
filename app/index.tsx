@@ -1,148 +1,202 @@
+
 import React, { useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Pressable,
-  TouchableOpacity
-} from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import {View, Text, StyleSheet, FlatList,TouchableOpacity, Pressable} from 'react-native';
+import { useFocusEffect, useRouter, Link } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
+// On définit ce qu’est une "note"
 type Note = {
-  id: string;
-  title: string;
-  content: string;
-  date: string;
-  importance: 'high' | 'medium' | 'low';
+  id: string;                         
+  title: string;                       
+  content: string;                       
+  date: string;                         
+  importance: 'high' | 'medium' | 'low'; 
 };
 
+  
 export default function Index() {
-  const router = useRouter();
-  const [notes, setNotes] = useState<Note[]>([]);
+  const router = useRouter();                   
+  const [notes, setNotes] = useState<Note[]>([]); // État pour stocker les notes
 
+  // Cette fonction est appelée quand on revient sur cette page
   useFocusEffect(
     useCallback(() => {
-      const loadNotes = async () => {
-        const raw = await AsyncStorage.getItem('notes');
-        setNotes(raw ? JSON.parse(raw) : []);
+      const load = async () => {
+        const raw = await AsyncStorage.getItem('notes'); 
+        setNotes(raw ? JSON.parse(raw) : []);            
       };
-      loadNotes();
+      load();
     }, [])
   );
 
-  const getImportanceColor = (level: Note['importance']) => {
-    switch (level) {
-      case 'high': return '#EF4444'; // red
-      case 'medium': return '#F59E0B'; // orange
-      case 'low': return '#10B981'; // green
-    }
-  };
+  // Fonction pour ouvrir une note quand on clique dessus
+  const openNote = useCallback((note: Note) => {
+    router.push({
+      pathname: '/note',                    
+      params: { note: JSON.stringify(note) },  
+    });
+  }, [router]);
 
+  // Ce que l’écran affiche
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>📓 My Notes</Text>
+      <View style={styles.topBar}>
+        <Text style={styles.appTitle}>MyNoteBook</Text>  
+        <Pressable
+          style={styles.addButton}
+          onPress={() => router.push('/form')} // navigation propre sans paramètre
+        >
+          <Text style={styles.addButtonText}>New Note</Text>
+        </Pressable>
+      </View>
 
-      <FlatList
-        data={notes}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/note",
-                params: {
-                  id: item.id
-                },
-              })
-            }
-            style={({ pressed }) => [
-              styles.noteCard,
-              { opacity: pressed ? 0.8 : 1 },
-              { borderLeftColor: getImportanceColor(item.importance) },
-            ]}
-          >
+      {/* Si aucune note n’existe, on affiche un message */}
+      {notes.length === 0 ? (
+        <Text style={styles.empty}>No notes were created.</Text>
+      ) : (
+        // Sinon, on affiche toutes les notes avec FlatList
+        <FlatList
+          data={notes}                                
+          keyExtractor={(item) => item.id}             
+          contentContainerStyle={styles.listContent}    
+          showsVerticalScrollIndicator={false}        
+          renderItem={({ item }) => (                  
+            <TouchableOpacity 
+              onPress={() => openNote(item)}          
+              activeOpacity={0.7}                     
+            >
+              <View style={styles.card}>                
+                <Text style={styles.title}>{item.title}</Text>    
+                <Text style={styles.content}>{item.content}</Text>      
+                <Text style={styles.date}>
+                  {new Date(item.date).toLocaleDateString()}  
+                </Text>                                               
 
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.content}>{item.content}</Text>
-            <Text style={styles.date}>
-              {new Date(item.date).toLocaleDateString()}
-            </Text>
-          </Pressable>
-        )}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No notes available yet.</Text>
-        }
-      />
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push('/form')}
-      >
-        <Text style={styles.addButtonText}>+ New Note</Text>
-      </TouchableOpacity>
+                {/* Un point coloré selon l’importance */}
+                <View
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor:
+                        item.importance === 'high'
+                          ? '#F45B69'       
+                          : item.importance === 'medium'
+                          ? '#FFD4CA'       
+                          : '#7EE4EC',      
+                    },
+                  ]}
+                />
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#111827',
-  },
-  noteCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 3,
-    borderLeftWidth: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  content: {
-    fontSize: 14,
-    color: '#4B5563',
-    marginTop: 4,
-  },
-  date: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 8,
-  },
-  empty: {
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  addButton: {
-    backgroundColor: '#2563EB',
-    paddingVertical: 14,
+    backgroundColor: '#F4F7FA',
+    paddingTop: 50,
     paddingHorizontal: 20,
-    borderRadius: 100,
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    elevation: 4,
   },
+
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+
+  appTitle: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#1F2D3D',
+    letterSpacing: 1,
+  },
+
+  addButton: {
+    backgroundColor: '#456990',
+    padding: 12,
+    borderRadius: 30,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+
   addButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+
+  empty: {
+    color: '#7B8794',
+    textAlign: 'center',
+    fontSize: 18,
+    marginTop: 100,
+    opacity: 0.8,
+  },
+
+  listContent: {
+    paddingBottom: 100,
+  },
+
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    marginHorizontal: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+    position: 'relative',
+  },
+
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1C1E',
+    marginBottom: 8,
+  },
+
+  content: {
+    fontSize: 15,
+    color: '#4A4A4A',
+    lineHeight: 20,
+  },
+
+  date: {
+    fontSize: 13,
+    color: '#A0AEC0',
+    marginTop: 10,
+  },
+
+  dot: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#F4F7FA',
   },
 });
+
+
+
+ 

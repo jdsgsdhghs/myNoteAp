@@ -1,11 +1,12 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';  
+import DateTimePicker from '@react-native-community/datetimepicker';    
+import { router, useLocalSearchParams } from 'expo-router';            
+import React, { useState, useEffect } from 'react';                
 import {
   Button, Keyboard, Platform, StyleSheet, Text, TextInput,
   TouchableOpacity, TouchableWithoutFeedback, View,
-} from 'react-native';
+} from 'react-native';                                                 
 
 const importanceLevels = [
   { value: 'high',   color: '#F45B69' },
@@ -14,29 +15,31 @@ const importanceLevels = [
 ];
 
 export default function Form() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [date, setDate] = useState(new Date());
-  const [importance, setImportance] = useState('low');
-  const [showPicker, setShowPicker] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const { note } = useLocalSearchParams();
+  
+  const [title,      setTitle]      = useState('');       
+  const [content,    setContent]    = useState('');       
+  const [date,       setDate]       = useState(new Date());
+  const [importance, setImportance] = useState('low');   
+  const [showPicker, setShowPicker] = useState(false);    
+
+  const [editingId,  setEditingId]  = useState<number | null>(null); 
+  const { note } = useLocalSearchParams();                         
 
   useEffect(() => {
     try {
       if (note) {
-        const n = JSON.parse(note as string);
-        if (n?.id) {
-          setTitle(n.title);
-          setContent(n.content);
-          setDate(new Date(n.date));
-          setImportance(n.importance);
-          setEditingId(n.id);
-          return;
+        const n = JSON.parse(note as string);   
+        if (n?.id) {                                  
+          setTitle(n.title);                        
+          setContent(n.content);                     
+          setDate(new Date(n.date));                   
+          setImportance(n.importance);               
+          setEditingId(n.id);                          
+          return;                                      
         }
       }
     } catch (e) {
-      console.warn('Invalid note parameters');
+      console.warn('Params no valid');      
     }
 
     setTitle('');
@@ -47,70 +50,81 @@ export default function Form() {
   }, [note]);
 
   const handleSubmit = async () => {
+ 
     if (!title.trim() || !content.trim()) {
-      alert('Please fill in both the title and content.');
+      alert('Please fill in the title and content.');
       return;
     }
 
+    // Objet note à enregistrer
     const noteObj = {
-      id: editingId ?? Date.now(),
+      id: editingId ?? Date.now(),           
       title: title.trim(),
       content: content.trim(),
-      date: date.toISOString(),
-      importance,
+      date: date.toISOString(),       
+      importance,                         
     };
 
     try {
+      // Récupère les notes existantes
       const raw = await AsyncStorage.getItem('notes');
       const arr = raw ? JSON.parse(raw) : [];
 
+      
       const updatedNotes = editingId
         ? arr.map((n: any) => (n.id === editingId ? noteObj : n))
         : [...arr, noteObj];
 
+     
       await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
-      router.push('/');
+
+      router.push('/');                  
     } catch (e) {
-      console.error('Save error:', e);
-      alert('An error occurred while saving.');
+      console.error('Erreur de sauvegarde :', e);
+      alert('Une erreur est survenue.');
     }
   };
 
+ 
   return (
+    // Ferme le clavier si on tape en dehors du formulaire
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
+      
         <Text style={styles.page}>
-          {editingId ? '✏️ Edit Note' : '📝 New Note'}
+          {editingId ? 'Update Note' : 'Create a new note'}
         </Text>
 
+       
         <TextInput
           style={styles.input}
-          placeholder="Note title"
-          placeholderTextColor="#9CA3AF"
+          placeholder="Enter your title here"
           value={title}
           onChangeText={setTitle}
         />
 
+       
         <Text style={styles.label}>Content</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Note details..."
-          placeholderTextColor="#9CA3AF"
+          style={[styles.input, { height: 100 }]}
+          placeholder="Enter your content here"
           value={content}
           onChangeText={setContent}
           multiline
         />
 
+      
         <Text style={styles.label}>Date</Text>
         <TouchableOpacity
           style={styles.dateInput}
           onPress={() => setShowPicker(true)}
         >
-          <Text style={styles.dateText}>
+          <Text style={{ color: '#fff' }}>
             {date.toLocaleDateString()}
           </Text>
         </TouchableOpacity>
 
+        {/* Affiche le DateTimePicker si demandé */}
         {showPicker && (
           <>
             <DateTimePicker
@@ -123,13 +137,14 @@ export default function Form() {
                 if (Platform.OS === 'android') setShowPicker(false);
               }}
             />
+            {/* Bouton OK pour fermer sur iOS */}
             {Platform.OS === 'ios' && (
-              <Button title="Confirm Date" onPress={() => setShowPicker(false)} />
+              <Button title="ok" onPress={() => setShowPicker(false)} />
             )}
           </>
         )}
 
-        <Text style={styles.label}>Importance</Text>
+        {/* Choix de l’importance sous forme de cercles colorés */}
         <View style={styles.importanceContainer}>
           {importanceLevels.map((lvl) => (
             <TouchableOpacity
@@ -137,109 +152,89 @@ export default function Form() {
               style={[
                 styles.importanceButton,
                 { backgroundColor: lvl.color },
-                importance === lvl.value && styles.selected
+                importance === lvl.value && styles.selected, 
               ]}
               onPress={() => setImportance(lvl.value)}
             />
           ))}
         </View>
 
-        <View style={styles.buttonGroup}>
-          <TouchableOpacity onPress={() => router.back()} style={[styles.button, styles.backButton]}>
-            <Text style={styles.buttonText}>← Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleSubmit} style={[styles.button, styles.saveButton]}>
-            <Text style={styles.buttonText}>💾 Save</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Boutons de navigation */}
+        <Button title="Back"   onPress={() => router.back()} />
+        <Button title="Save" onPress={handleSubmit} />
       </View>
     </TouchableWithoutFeedback>
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#456990',
+    paddingHorizontal: 20,
+    paddingTop: 32,
+    justifyContent: 'flex-start',
   },
   page: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 24,
+    color: '#fff',
+    marginBottom: 16,
     textAlign: 'center',
   },
   label: {
-    fontSize: 16,
-    color: '#374151',
-    marginBottom: 6,
-    marginTop: 12,
+    color: '#fff8f8',
     fontWeight: '600',
+    fontSize: 14,
+    marginBottom: 4,
+    marginTop: 12,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    borderRadius: 10,
-    fontSize: 16,
-    borderColor: '#D1D5DB',
     borderWidth: 1,
-    color: '#111827',
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+    color: '#333',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    width: '100%',
+    fontSize: 14,
   },
   dateInput: {
-    backgroundColor: '#2563EB',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  dateText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    width: '100%',
   },
   importanceContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    alignItems: 'center',
+    marginVertical: 12,
   },
   importanceButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginHorizontal: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: '#fff',
+    marginHorizontal: 6,
   },
   selected: {
     borderWidth: 3,
-    borderColor: '#111827',
+    borderColor: '#fff',
   },
-  buttonGroup: {
+  buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 30,
-  },
-  button: {
-    flex: 1,
-    padding: 14,
-    marginHorizontal: 6,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  backButton: {
-    backgroundColor: '#9CA3AF',
-  },
-  saveButton: {
-    backgroundColor: '#10B981',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    width: '100%',
+    marginTop: 16,
+    gap: 10,
   },
 });
+

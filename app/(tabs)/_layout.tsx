@@ -1,32 +1,19 @@
-import { Tabs} from 'expo-router'
+/* import { Tabs } from 'expo-router'
 import React from 'react'
-import { View, Text } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
 
-export default function NoteScreen() {
-  const { id } = useLocalSearchParams();
-
+const layout = () => {
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Note ID: {id}</Text>
-      {/* Tu peux ici chercher la note avec l’ID ou passer les données via params */}
-    </View>
-  );
+    <Tabs
+      screenOptions={{
+}}
+    >
+      <Tabs.Screen name="index" options={{ title: 'Home' ,headerShown:false }} />
+      <Tabs.Screen name="form" options={{ title: 'Form', headerShown:false }} />
+      
+    </Tabs>
+  )
 }
 
-// const layout = () => {
-//   return (
-//     <Tabs
-//       screenOptions={{
-// }}
-//     >
-//       <Tabs.Screen name="index" options={{ title: 'Home' ,headerShown:false }} />
-//       <Tabs.Screen name="form" options={{ title: 'Form', headerShown:false }} />
-      
-//     </Tabs>
-//   )
-// }
+export default layout
 
-// export default layout
-
- 
+ */

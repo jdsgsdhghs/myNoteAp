@@ -1,22 +1,15 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function NoteScreen() {
-  const router = useRouter();
+  const router = useRouter(); 
   const params = useLocalSearchParams();
+  const note = params.note ? JSON.parse(params.note as string) : null;
 
-  // On reconstruit proprement l'objet note
-  const note = {
-    id: params.id,
-    title: params.title,
-    content: params.content,
-    date: params.date,
-    importance: params.importance, // sera toujours string
-  };
-
-  if (!note || !note.id) {
+  if (!note) {
     return (
       <View style={styles.container}>
         <Text style={styles.error}>Note not found</Text>
@@ -41,18 +34,11 @@ export default function NoteScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            try {
-              const raw = await AsyncStorage.getItem('notes');
-              const notes = raw ? JSON.parse(raw) : [];
-
-              const filtered = notes.filter((n: any) => n.id !== note.id);
-
-              await AsyncStorage.setItem('notes', JSON.stringify(filtered));
-              router.push('/');
-            } catch (error) {
-              console.error("Error deleting note:", error);
-              Alert.alert("Erreur", "Impossible de supprimer la note.");
-            }
+            const raw = await AsyncStorage.getItem('notes');
+            const notes = raw ? JSON.parse(raw) : [];
+            const filtered = notes.filter((n: any) => n.id !== note.id);
+            await AsyncStorage.setItem('notes', JSON.stringify(filtered));
+            router.push('/');
           },
         },
       ],
@@ -60,16 +46,12 @@ export default function NoteScreen() {
     );
   };
 
-  console.log(handleDelete);
-
   return (
     <View style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>{note.title}</Text>
         <Text style={styles.content}>{note.content}</Text>
-        <Text style={styles.date}>
-          {/* {note.date ? new Date(note.date).toLocaleDateString() : ''} */}
-        </Text>
+        <Text style={styles.date}>{new Date(note.date).toLocaleDateString()}</Text>
 
         <View
           style={[
@@ -85,19 +67,23 @@ export default function NoteScreen() {
           ]}
         />
 
-        <View style={styles.cardButtons}>
-          <View style={styles.button}>
-            <Button title="Edit" onPress={handleEdit} color="#007AFF" />
-          </View>
-          <View style={styles.button}>
-            <Button title="Delete" onPress={handleDelete} color="#FF3B30" />
-          </View>
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleEdit}>
+            <Ionicons name="create-outline" size={20} color="#fff" />
+            <Text style={styles.buttonText}>Edit</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.actionButton, styles.delete]} onPress={handleDelete}>
+            <Ionicons name="trash-outline" size={20} color="#fff" />
+            <Text style={styles.buttonText}>Delete</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.backButton}>
-        <Button title="BACK" onPress={() => router.push('/')} color="#fff" />
-      </View>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.push('/')}>
+        <Ionicons name="arrow-back" size={20} color="#fff" />
+        <Text style={styles.backText}>Back</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -105,67 +91,85 @@ export default function NoteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#456990',
+    backgroundColor: '#1F2A38',
+    alignItems: 'center',
     padding: 24,
     justifyContent: 'center',
-    alignItems: 'center',
   },
   error: {
-    color: 'white',
+    color: '#fff',
     fontSize: 18,
   },
   card: {
     backgroundColor: '#fff',
+    width: '100%',
     borderRadius: 16,
     padding: 20,
-    width: '100%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
     elevation: 5,
-    marginBottom: 40,
+    marginBottom: 60,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#222',
     marginBottom: 12,
   },
   content: {
     fontSize: 16,
-    color: '#444',
+    color: '#555',
     marginBottom: 12,
   },
   date: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 12,
+    fontSize: 13,
+    color: '#999',
+    marginBottom: 16,
   },
   importanceDot: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    alignSelf: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  cardButtons: {
+  actions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 12,
   },
-  button: {
+  actionButton: {
+    flexDirection: 'row',
+    backgroundColor: '#007AFF',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    alignItems: 'center',
+    gap: 8,
     flex: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
+  },
+  delete: {
+    backgroundColor: '#FF3B30',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
   },
   backButton: {
     position: 'absolute',
-    bottom: 40,
-    width: '80%',
-    backgroundColor: '#2C3E50',
-    borderRadius: 8,
-    overflow: 'hidden',
+    bottom: 30,
+    backgroundColor: '#34495E',
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 30,
+    alignItems: 'center',
+    gap: 10,
+  },
+  backText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
-
